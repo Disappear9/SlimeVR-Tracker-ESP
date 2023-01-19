@@ -38,6 +38,7 @@
 //#define IMU_ROTATION DEG_90
 //#define SECOND_IMU_ROTATION DEG_180
 
+
 // Battery monitoring options (comment to disable):
 //   BAT_EXTERNAL for ADC pin, 
 //   BAT_INTERNAL for internal - can detect only low battery, 
