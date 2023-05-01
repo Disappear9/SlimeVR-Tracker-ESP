@@ -1,4 +1,8 @@
 .pio
 .vscode/*
 build/
+<<<<<<< HEAD
 platformio.ini
+=======
+venv/
+>>>>>>> 3b8826742045994bd0aeb5e3215f42368097b43c
