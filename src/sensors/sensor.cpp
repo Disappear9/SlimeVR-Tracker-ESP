@@ -21,30 +21,42 @@
     THE SOFTWARE.
 */
 #include "sensor.h"
-#include "network/network.h"
+#include "GlobalVars.h"
 #include <i2cscan.h>
 #include "calibration.h"
 
-uint8_t Sensor::getSensorState() {
-    return isWorking() ? SensorStatus::SENSOR_OK : SensorStatus::SENSOR_OFFLINE;
+SensorStatus Sensor::getSensorState() {
+    return isWorking() ? SensorStatus::SENSOR_OK : SensorStatus::SENSOR_ERROR;
+}
+
+void Sensor::setAccelerationReady() {
+    newAcceleration = true;
+}
+
+void Sensor::setFusedRotationReady() {
+    bool changed = OPTIMIZE_UPDATES ? !lastFusedRotationSent.equalsWithEpsilon(fusedRotation) : true;
+    if (ENABLE_INSPECTION || changed) {
+        newFusedRotation = true;
+        lastFusedRotationSent = fusedRotation;
+    }
 }
 
 void Sensor::sendData() {
-    if(newFusedRotation) {
+    if (newFusedRotation) {
         newFusedRotation = false;
-        Network::sendRotationData(&fusedRotation, DATA_TYPE_NORMAL, calibrationAccuracy, sensorId);
+        networkConnection.sendRotationData(sensorId, &fusedRotation, DATA_TYPE_NORMAL, calibrationAccuracy);
 
 #ifdef DEBUG_SENSOR
-        m_Logger.trace("Quaternion: %f, %f, %f, %f", UNPACK_QUATERNION(quaternion));
+        m_Logger.trace("Quaternion: %f, %f, %f, %f", UNPACK_QUATERNION(fusedRotation));
 #endif
-    }
 
 #if SEND_ACCELERATION
-    if(newAcceleration) {
-        newAcceleration = false;
-        Network::sendAccel(acceleration, sensorId);
-    }
+        if (newAcceleration) {
+            newAcceleration = false;
+            networkConnection.sendSensorAcceleration(sensorId, acceleration);
+        }
 #endif
+    }
 }
 
 void Sensor::printTemperatureCalibrationUnsupported() {
@@ -75,6 +87,8 @@ const char * getIMUNameByType(int imuType) {
             return "BMI160";
         case IMU_ICM20948:
             return "ICM20948";
+        case IMU_ICM42688:
+            return "ICM42688";
     }
     return "Unknown";
 }
